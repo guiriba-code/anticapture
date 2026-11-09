@@ -41,9 +41,20 @@ export const TokenMetricItemSchema = z
       example: "1704067200",
     }),
     high: z.string().openapi({
-      description: "Highest observed value for the period.",
+      description:
+        "Highest observed value on days that had an event. Gap days repeat the close.",
       example: "14250000000000000000",
       format: "bigint",
+    }),
+    close: z.string().openapi({
+      description:
+        "UTC daily close. This is the level to chart. Gap days carry the previous close forward.",
+      example: "12000000000000000000",
+      format: "bigint",
+    }),
+    partial: z.boolean().openapi({
+      description:
+        "True when the bucket is the current UTC day and can still change.",
     }),
     volume: z.string().openapi({
       description: "Total volume observed for the period.",

@@ -20,6 +20,7 @@ import {
   updateSupplyMetric,
   updateTotalSupply,
 } from "@/eventHandlers/metrics";
+import { isNftBurnTransfer } from "@/lib/nft-supply";
 
 export function LilNounsTokenIndexer(address: Address, decimals: number) {
   const daoId = DaoIdEnum.LIL_NOUNS;
@@ -98,6 +99,28 @@ export function LilNounsTokenIndexer(address: Address, decimals: number) {
 
       const isFromTimelock = isAddressEqual(event.args.from, timelock);
       const isToTimelock = isAddressEqual(event.args.to, timelock);
+      let supplyChanged = false;
+
+      if (isNftBurnTransfer(from, to)) {
+        supplyChanged = await updateTotalSupply(
+          context,
+          burningAddressSet,
+          MetricTypesEnum.TOTAL_SUPPLY,
+          from,
+          to,
+          1n,
+          daoId,
+          address,
+          event.block.timestamp,
+        );
+        await updateDelegatedSupply(
+          context,
+          daoId,
+          address,
+          -1n,
+          event.block.timestamp,
+        );
+      }
 
       if (isFromTimelock || isToTimelock) {
         const treasuryChanged = await updateSupplyMetric(
@@ -113,14 +136,16 @@ export function LilNounsTokenIndexer(address: Address, decimals: number) {
           event.block.timestamp,
         );
 
-        if (treasuryChanged) {
-          await updateCirculatingSupply(
-            context,
-            daoId,
-            address,
-            event.block.timestamp,
-          );
-        }
+        supplyChanged = supplyChanged || treasuryChanged;
+      }
+
+      if (supplyChanged) {
+        await updateCirculatingSupply(
+          context,
+          daoId,
+          address,
+          event.block.timestamp,
+        );
       }
     },
   );

@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 
 import type { Drizzle } from "@/database";
 import * as schema from "@/database/schema";
-import { feedEvent } from "@/database/schema";
+import { feedEvent, votesOnchain } from "@/database/schema";
 import { FeedEventType } from "@/lib/constants";
 
 import { HealthRepositoryImpl } from "./index";
@@ -43,6 +43,7 @@ describe("HealthRepositoryImpl", () => {
 
   beforeEach(async () => {
     await db.delete(feedEvent);
+    await db.delete(votesOnchain);
   });
 
   describe("getLastEventTimestamp", () => {
@@ -67,6 +68,30 @@ describe("HealthRepositoryImpl", () => {
 
       expect(typeof result).toBe("number");
       expect(result).toBe(1700086400);
+    });
+
+    it("includes a queued-style vote timestamp that the feed did not record", async () => {
+      await db
+        .insert(feedEvent)
+        .values(createEvent({ timestamp: 1_700_000_000 }));
+      await db.insert(votesOnchain).values({
+        txHash: "0xvote",
+        daoId: "LIL_NOUNS",
+        voterAccountId: "0x0000000000000000000000000000000000000001",
+        proposalId: "395",
+        support: "1",
+        votingPower: 1n,
+        timestamp: 1_700_000_500n,
+        logIndex: 1,
+      });
+
+      await expect(repository.getLastEventTimestamp()).resolves.toBe(
+        1_700_000_500,
+      );
+    });
+
+    it("returns null when the ponder sync schema is not readable", async () => {
+      await expect(repository.getSyncTimestamp()).resolves.toBeNull();
     });
   });
 

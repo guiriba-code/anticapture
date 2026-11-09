@@ -9,6 +9,7 @@ import {
   SECONDS_PER_DAY,
 } from "@/shared/constants/time-related";
 import type { TokenMetricItem } from "@/shared/dao-config/types";
+import { tokenMetricLevel } from "@/shared/utils/token-metric-level";
 import type { DaoIdEnum } from "@/shared/types/daos";
 import type { MetricTypesEnum } from "@/shared/types/enums/metric-type";
 import type { TimeInterval } from "@/shared/types/enums/TimeInterval";
@@ -56,7 +57,7 @@ export const useTimeSeriesData = (
             items: (result.items ?? []).map(
               (item): TokenMetricItem => ({
                 date: item.date,
-                high: String(item.high),
+                high: tokenMetricLevel(item),
                 volume: String(item.volume),
               }),
             ),

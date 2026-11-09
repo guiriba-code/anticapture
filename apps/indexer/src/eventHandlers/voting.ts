@@ -8,7 +8,9 @@ import {
 import { Address, getAddress, Hex } from "viem";
 
 import { ProposalStatus } from "@/lib/constants";
+import { accumulateCastVote } from "@/lib/vote-support";
 
+import { applyProposalContentUpdate } from "./proposal-content";
 import { ensureAccountExists } from "./shared";
 
 /**
@@ -37,6 +39,11 @@ export const voteCast = async (
     txHash: Hex;
     votingPower: bigint;
     logIndex: number;
+    weights?: {
+      againstVotes: bigint;
+      forVotes: bigint;
+      abstainVotes: bigint;
+    };
   },
 ) => {
   const {
@@ -48,44 +55,81 @@ export const voteCast = async (
     votingPower,
     reason,
     logIndex,
+    weights = {
+      againstVotes: support === 0 ? votingPower : 0n,
+      forVotes: support === 1 ? votingPower : 0n,
+      abstainVotes: support === 2 ? votingPower : 0n,
+    },
   } = args;
 
   await ensureAccountExists(context, voter);
 
-  // Update account power with vote statistics
+  const voterAccountId = getAddress(voter);
+  const existing = await context.db.find(votesOnchain, {
+    voterAccountId,
+    proposalId,
+  });
+  const accumulated = accumulateCastVote(
+    existing
+      ? {
+          votingPower: existing.votingPower,
+          txHash: existing.txHash,
+          logIndex: existing.logIndex,
+        }
+      : null,
+    { votingPower, txHash, logIndex },
+  );
+
+  // The same log during a backfill must not move totals again.
+  if (accumulated.action === "ignore") return;
+
+  const countsAsNewBallot = accumulated.action === "insert";
+
+  // A later partial vote from the same voter adds weight. It is not a new
+  // ballot, so votesCount stays put.
   await context.db
     .insert(accountPower)
     .values({
-      accountId: getAddress(voter),
+      accountId: voterAccountId,
       daoId,
-      votesCount: 1,
+      votesCount: countsAsNewBallot ? 1 : 0,
       lastVoteTimestamp: timestamp,
     })
     .onConflictDoUpdate((current) => ({
-      votesCount: current.votesCount + 1,
+      votesCount: current.votesCount + (countsAsNewBallot ? 1 : 0),
       lastVoteTimestamp: timestamp,
     }));
 
-  // Create vote record
-  await context.db.insert(votesOnchain).values({
-    txHash: txHash,
-    daoId,
-    proposalId,
-    voterAccountId: getAddress(voter),
-    support: support.toString(),
-    votingPower,
-    reason,
-    timestamp,
-    logIndex,
-  });
+  if (accumulated.action === "insert") {
+    await context.db.insert(votesOnchain).values({
+      txHash: txHash,
+      daoId,
+      proposalId,
+      voterAccountId,
+      support: support.toString(),
+      votingPower: accumulated.votingPower,
+      reason,
+      timestamp,
+      logIndex,
+    });
+  } else {
+    await context.db.update(votesOnchain, { voterAccountId, proposalId }).set({
+      txHash,
+      support: support.toString(),
+      votingPower: accumulated.votingPower,
+      reason,
+      timestamp,
+      logIndex,
+    });
+  }
 
   // Update proposal vote totals
   await context.db
     .update(proposalsOnchain, { id: proposalId })
     .set((current) => ({
-      againstVotes: current.againstVotes + (support === 0 ? votingPower : 0n),
-      forVotes: current.forVotes + (support === 1 ? votingPower : 0n),
-      abstainVotes: current.abstainVotes + (support === 2 ? votingPower : 0n),
+      againstVotes: current.againstVotes + weights.againstVotes,
+      forVotes: current.forVotes + weights.forVotes,
+      abstainVotes: current.abstainVotes + weights.abstainVotes,
     }));
 
   await context.db.insert(feedEvent).values({
@@ -238,6 +282,42 @@ export const proposalCreated = async (
  * - `proposalsOnchain`: Sets queuedTimestamp and queuedTxHash when status is QUEUED
  * - `proposalsOnchain`: Sets executedTimestamp and executedTxHash when status is EXECUTED
  */
+export const updateProposalContent = async (
+  context: Context,
+  proposalId: string,
+  patch: {
+    description?: string;
+    targets?: readonly Address[];
+    values?: readonly bigint[];
+    signatures?: readonly string[];
+    calldatas?: readonly Hex[];
+  },
+) => {
+  await context.db
+    .update(proposalsOnchain, { id: proposalId })
+    .set((current) => {
+      const next = applyProposalContentUpdate(
+        {
+          title: current.title,
+          description: current.description,
+          targets: current.targets,
+          values: current.values,
+          signatures: current.signatures,
+          calldatas: current.calldatas,
+        },
+        patch,
+      );
+      return {
+        title: next.title,
+        description: next.description,
+        targets: next.targets.map((target) => getAddress(target as Address)),
+        values: next.values,
+        signatures: next.signatures,
+        calldatas: next.calldatas,
+      };
+    });
+};
+
 export const updateProposalStatus = async (
   context: Context,
   proposalId: string,
