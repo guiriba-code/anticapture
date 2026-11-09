@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { DaoIdEnum } from "@/lib/enums";
 
 import {
+  BurningAddresses,
   CEXAddresses,
+  CONTRACT_ADDRESSES,
   DEXAddresses,
   LendingAddresses,
   TreasuryAddresses,
@@ -64,5 +66,14 @@ describe("address lists", () => {
     for (const address of Object.values(LendingAddresses[DaoIdEnum.COMP])) {
       expect(treasury.has(getAddress(address))).toBe(false);
     }
+  });
+
+  it("uses the indexed token as the burn TokenContract for AAVE and ARB", () => {
+    expect(getAddress(BurningAddresses[DaoIdEnum.AAVE].TokenContract)).toBe(
+      getAddress(CONTRACT_ADDRESSES[DaoIdEnum.AAVE].aave.address),
+    );
+    expect(getAddress(BurningAddresses[DaoIdEnum.ARB].TokenContract)).toBe(
+      getAddress(CONTRACT_ADDRESSES[DaoIdEnum.ARB].token.address),
+    );
   });
 });
