@@ -30,7 +30,7 @@ afterAll(() => server.close());
 function createStubRepo() {
   const stub = {
     nftPrices: [] as TokenHistoricalPriceResponse,
-    tokenPrice: "0",
+    tokenPrice: "0" as string | null,
 
     getHistoricalNFTPrice: async () => stub.nftPrices,
     getTokenPrice: async () => stub.tokenPrice,
