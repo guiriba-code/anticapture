@@ -76,4 +76,10 @@ describe("address lists", () => {
       getAddress(CONTRACT_ADDRESSES[DaoIdEnum.ARB].token.address),
     );
   });
+
+  it("uses the timelock returned by the Fluid governor", () => {
+    expect(getAddress(TreasuryAddresses[DaoIdEnum.FLUID].InstaTimelock!)).toBe(
+      "0x2386DC45AdDed673317eF068992F19421B481F4c",
+    );
+  });
 });

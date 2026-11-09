@@ -344,7 +344,10 @@ export const TreasuryAddresses: Record<DaoIdEnum, Record<string, Address>> = {
     "Fluid Liquidity": "0x52Aa899454998Be5b000Ad077a46Bbe360F4e497",
     "Chainlink CCIP LockReleaseTokenPool":
       "0x639f35C5E212D61Fe14Bd5CD8b66aAe4df11a50c",
-    InstaTimelock: "0xC7Cb1dE2721BFC0E0DA1b9D526bCdC54eF1C0eFC",
+    // governor.timelock(). The previous InstaTimelock
+    // 0xC7Cb1dE2721BFC0E0DA1b9D526bCdC54eF1C0eFC has a pendingAdmin and is not
+    // the contract the governor uses.
+    InstaTimelock: "0x2386DC45AdDed673317eF068992F19421B481F4c",
   },
   [DaoIdEnum.TORN]: {
     governor: "0x5efda50f22d34F262c29268506C5Fa42cB56A1Ce",
