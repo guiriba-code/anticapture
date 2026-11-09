@@ -54,4 +54,15 @@ describe("address lists", () => {
       expect(treasury).not.toContain(address);
     }
   });
+
+  it("does not count a COMP lending market as treasury as well", () => {
+    const treasury = new Set(
+      Object.values(TreasuryAddresses[DaoIdEnum.COMP]).map((address) =>
+        getAddress(address),
+      ),
+    );
+    for (const address of Object.values(LendingAddresses[DaoIdEnum.COMP])) {
+      expect(treasury.has(getAddress(address))).toBe(false);
+    }
+  });
 });
