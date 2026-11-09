@@ -1,4 +1,5 @@
 import { ponder } from "ponder:registry";
+import { tokenPrice } from "ponder:schema";
 
 import {
   updateProposalStatus,
@@ -70,6 +71,20 @@ export function LilNounsGovernorIndexer(blockTime: number) {
       event.block.timestamp,
       event.transaction.hash,
     );
+  });
+
+  // Several auctions settle on the same day. Keep the latest price instead of
+  // failing the insert, which would stall the indexer.
+  ponder.on(`LilNounsAuction:AuctionSettled`, async ({ event, context }) => {
+    await context.db
+      .insert(tokenPrice)
+      .values({
+        price: event.args.amount,
+        timestamp: event.block.timestamp,
+      })
+      .onConflictDoUpdate({
+        price: event.args.amount,
+      });
   });
 
   ponder.on(`LilNounsGovernor:ProposalVetoed`, async ({ event, context }) => {

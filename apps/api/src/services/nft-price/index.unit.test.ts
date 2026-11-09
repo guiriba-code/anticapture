@@ -71,6 +71,15 @@ describe("NFTPriceService", () => {
         degraded: false,
       });
     });
+
+    it("returns a degraded zero instead of throwing when no auction price exists", async () => {
+      repo.getTokenPrice = async () => null;
+
+      expect(await service.getTokenPrice("token", "usd")).toEqual({
+        data: "0",
+        degraded: true,
+      });
+    });
   });
 
   describe("getHistoricalTokenData", () => {

@@ -34,7 +34,7 @@ export interface NFTPriceRepository {
     limit: number,
     offset: number,
   ): Promise<TokenHistoricalPriceResponse>;
-  getTokenPrice(): Promise<string>;
+  getTokenPrice(): Promise<string | null>;
 }
 
 export class NFTPriceService implements PriceProvider {
@@ -159,6 +159,12 @@ export class NFTPriceService implements PriceProvider {
     // Outside the try below on purpose: this reads PostgreSQL, and a database
     // error must stay a real error rather than degrade to a stale price.
     const price = await this.repo.getTokenPrice();
+    if (price == null) {
+      // Lil Nouns never indexed auction settlements, so this table is empty
+      // and the old non-null assertion crashed GET /token with a 500.
+      logger.warn("no indexed NFT auction price; serving a degraded zero");
+      return { data: "0", degraded: true };
+    }
     const nftEthValue = Number(formatEther(BigInt(price)));
 
     let value: string;

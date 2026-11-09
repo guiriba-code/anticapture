@@ -133,6 +133,10 @@ describe("NFTPriceRepository", () => {
   });
 
   describe("getTokenPrice", () => {
+    it("returns null when no auction price has been indexed", async () => {
+      await expect(repository.getTokenPrice()).resolves.toBeNull();
+    });
+
     it("should return the latest price", async () => {
       await db
         .insert(tokenPrice)

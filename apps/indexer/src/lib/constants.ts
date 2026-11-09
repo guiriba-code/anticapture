@@ -216,6 +216,11 @@ export const CONTRACT_ADDRESSES = {
       address: "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039",
       startBlock: 14736719,
     },
+    auction: {
+      // https://etherscan.io/address/0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E
+      address: "0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E",
+      startBlock: 14736713,
+    },
   },
   [DaoIdEnum.AAVE]: {
     blockTime: 1,
