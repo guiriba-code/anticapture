@@ -1,7 +1,7 @@
 import type { DAOClient } from "@/clients";
 import type { HealthRepository } from "@/repositories";
 
-const FRESHNESS_MAX_LAG_SECONDS = 300;
+import { assessIndexerFreshness } from "./freshness";
 
 export type HealthStatus = "ok" | "degraded" | "error";
 
@@ -32,22 +32,27 @@ export class HealthService {
   }
 
   async getHealth(): Promise<HealthReport> {
-    const [dbResult, headResult, lastTsResult] = await Promise.allSettled([
-      this.repo.pingDatabase(),
-      this.daoClient.getCurrentBlockNumber(),
-      this.repo.getLastEventTimestamp(),
-    ]);
+    const [dbResult, headResult, lastTsResult, syncResult] =
+      await Promise.allSettled([
+        this.repo.pingDatabase(),
+        this.daoClient.getCurrentBlockNumber(),
+        this.repo.getLastEventTimestamp(),
+        this.repo.getSyncTimestamp(),
+      ]);
 
     const database = dbResult.status === "fulfilled" ? "ok" : "error";
     const head = headResult.status === "fulfilled" ? headResult.value : null;
-    const lastEventTimestamp =
+    const lastActivity =
       lastTsResult.status === "fulfilled" ? lastTsResult.value : null;
+    const syncTimestamp =
+      syncResult.status === "fulfilled" ? syncResult.value : null;
 
     const now = Math.floor(Date.now() / 1000);
-    const lagSeconds =
-      lastEventTimestamp !== null ? now - lastEventTimestamp : null;
-    const fresh =
-      lagSeconds !== null && lagSeconds <= FRESHNESS_MAX_LAG_SECONDS;
+    const { lastEventTimestamp, lagSeconds, fresh } = assessIndexerFreshness({
+      nowSeconds: now,
+      lastActivityTimestamp: lastActivity,
+      syncTimestamp,
+    });
 
     let status: HealthStatus;
     if (database === "error") status = "error";

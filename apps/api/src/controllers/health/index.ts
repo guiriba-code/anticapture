@@ -36,15 +36,15 @@ const HealthResponseSchema = z
       .object({
         lastEventTimestamp: z.number().int().nullable().openapi({
           description:
-            "Unix timestamp (seconds) of the most recent indexed event, or null if no events have been recorded.",
+            "Unix timestamp (seconds) of the Ponder sync cursor when ponder_sync is readable, otherwise the latest indexed activity across proposals, votes, transfers, metrics and the feed. Null when none of those exist.",
         }),
         lagSeconds: z.number().int().nullable().openapi({
           description:
-            "Seconds between now and lastEventTimestamp, or null if the indexer hasn't produced any events.",
+            "Seconds between now and lastEventTimestamp, or null when there is no cursor.",
         }),
         fresh: z.boolean().openapi({
           description:
-            "True when lagSeconds is within the freshness threshold (300s).",
+            "True when the sync cursor is within 600 seconds, or, if that cursor is unreadable, when indexed activity is within 24 hours. A quiet DAO is not degraded after five minutes.",
         }),
       })
       .openapi({
