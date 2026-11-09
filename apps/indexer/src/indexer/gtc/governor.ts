@@ -7,23 +7,43 @@ import {
 } from "@/eventHandlers";
 import { DaoIdEnum } from "@/lib/enums";
 import { ProposalStatus } from "@/lib/constants";
-import { bravoSupport } from "@/lib/vote-support";
+import { alphaSupport, bravoSupport } from "@/lib/vote-support";
 
 export function GovernorIndexer(blockTime: number) {
   const daoId = DaoIdEnum.GTC;
 
-  ponder.on(`GTCGovernor:VoteCast`, async ({ event, context }) => {
-    await voteCast(context, daoId, {
-      proposalId: event.args.proposalId.toString(),
-      voter: event.args.voter,
-      reason: event.args.reason,
-      support: bravoSupport(event.args.support),
-      timestamp: event.block.timestamp,
-      txHash: event.transaction.hash,
-      votingPower: event.args.weight,
-      logIndex: event.log.logIndex,
-    });
-  });
+  ponder.on(
+    "GTCGovernor:VoteCast(address indexed voter, uint256 proposalId, uint8 support, uint256 weight, string reason)",
+    async ({ event, context }) => {
+      await voteCast(context, daoId, {
+        proposalId: event.args.proposalId.toString(),
+        voter: event.args.voter,
+        reason: event.args.reason,
+        support: bravoSupport(event.args.support),
+        timestamp: event.block.timestamp,
+        txHash: event.transaction.hash,
+        votingPower: event.args.weight,
+        logIndex: event.log.logIndex,
+      });
+    },
+  );
+
+  // GovernorAlpha emits VoteCast(address,uint256,bool,uint256). voter is not indexed.
+  ponder.on(
+    "GTCGovernor:VoteCast(address voter, uint256 proposalId, bool support, uint256 votes)",
+    async ({ event, context }) => {
+      await voteCast(context, daoId, {
+        proposalId: event.args.proposalId.toString(),
+        voter: event.args.voter,
+        reason: "",
+        support: alphaSupport(event.args.support),
+        timestamp: event.block.timestamp,
+        txHash: event.transaction.hash,
+        votingPower: event.args.votes,
+        logIndex: event.log.logIndex,
+      });
+    },
+  );
 
   ponder.on(`GTCGovernor:ProposalCreated`, async ({ event, context }) => {
     await proposalCreated(context, daoId, blockTime, {
