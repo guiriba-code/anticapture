@@ -148,18 +148,17 @@ describe("NFTPriceRepository", () => {
 
       const result = await repository.getTokenPrice();
 
-      expect(result).toBe("300");
+      expect(result).toEqual({ price: "300", timestamp: 1700002000 });
     });
 
-    it("should return price as string", async () => {
+    it("should return price as string with its timestamp", async () => {
       await db
         .insert(tokenPrice)
         .values(createTokenPrice({ timestamp: 1700000000n, price: 999n }));
 
       const result = await repository.getTokenPrice();
 
-      expect(typeof result).toBe("string");
-      expect(result).toBe("999");
+      expect(result).toEqual({ price: "999", timestamp: 1700000000 });
     });
   });
 });

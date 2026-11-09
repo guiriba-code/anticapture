@@ -109,7 +109,9 @@ A4 is a stopped Nouns indexer process. Replaying code will not move a process th
 
 **Root cause of the 500.** Nothing writes Lil Nouns `token_price`. `getTokenPrice()` used a non-null assertion on an empty table and threw. Nouns writes prices from `AuctionSettled`; Lil Nouns had no auction contract.
 
-**Change.** A burn (`to` is `0x0` or `0xdead`, and `from` is not `0x0`) decreases total and delegated supply and refreshes circulating. Mints stay on `NounCreated`, so they are not counted twice. Empty auction prices return `{ data: "0", degraded: true }` instead of throwing. Lil Nouns auction `0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E` (deployment block `14736713`, Blockscout name `NounsAuctionHouseProxy`) is indexed. Same-day settlements update the row instead of failing the insert, because Lil Nouns settles many times a day and a thrown insert would stall the indexer.
+**Change.** A burn (`to` is `0x0` or `0xdead`, and `from` is not `0x0`) decreases total and delegated supply and refreshes circulating. Mints stay on `NounCreated`, so they are not counted twice. Empty auction prices return `{ data: "0", degraded: true }` instead of throwing. Lil Nouns auction `0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E` (deployment block `14736713`) is indexed from `LilNounsAuctionIndexer` in `apps/indexer/src/indexer/lil-nouns/auction.ts`. The row key is the block timestamp. A second settlement in that same block updates the price instead of throwing.
+
+The last `AuctionSettled` on that auction house is block `20381554` (2024-07-25 UTC). 467 tokens have been minted since, and `minter()` is now `0xA2587b1e2626904c8575640512b987Bd3d3B592D`. That minter's sale event is not indexed. After a backfill the stored price would be the 2024 sale. `GET /token` still returns that number, but `degraded` is true when the latest indexed sale is older than 7 days, so it is not treated as the current price.
 
 **Test.** `isNftBurnTransfer` distinguishes mint, burn and ordinary transfer. Repository returns null on an empty price table. Service returns a degraded zero.
 
