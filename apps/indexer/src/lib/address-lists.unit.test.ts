@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 
 import { DaoIdEnum } from "@/lib/enums";
 
-import { CEXAddresses, DEXAddresses, LendingAddresses } from "./constants";
+import {
+  CEXAddresses,
+  DEXAddresses,
+  LendingAddresses,
+  TreasuryAddresses,
+} from "./constants";
 
 function duplicateAddresses(
   lists: Record<string, Record<string, string>>,
@@ -31,5 +36,22 @@ describe("address lists", () => {
     expect(duplicateAddresses(cexWithoutGtc)).toEqual([]);
     expect(duplicateAddresses(DEXAddresses)).toEqual([]);
     expect(duplicateAddresses(LendingAddresses)).toEqual([]);
+  });
+
+  it("keeps bridges, investors and other DAOs out of the GTC treasury", () => {
+    const treasury = Object.values(TreasuryAddresses[DaoIdEnum.GTC]).map(
+      (address) => getAddress(address),
+    );
+    const thirdParties = [
+      "0xe527BbDE3654E9ba824f9B72DFF495eEe60fD366",
+      "0xa3A7B6F88361F48403514059F1F16C8E78d60EeC",
+      "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1",
+      "0x8dA8f82d2BbDd896822de723F55D6EdF416130ba",
+      "0x7aD3d9819B06E800F8A65f3440D599A23D6A0BDf",
+    ].map((address) => getAddress(address));
+
+    for (const address of thirdParties) {
+      expect(treasury).not.toContain(address);
+    }
   });
 });
