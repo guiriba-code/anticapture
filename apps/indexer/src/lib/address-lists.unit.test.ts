@@ -33,11 +33,32 @@ function duplicateAddresses(
 
 describe("address lists", () => {
   it("keeps each CEX, DEX and lending address once per DAO", () => {
-    // GTC CEX labels are on hold until a verified holder CSV arrives.
-    const { [DaoIdEnum.GTC]: _gtcCex, ...cexWithoutGtc } = CEXAddresses;
-    expect(duplicateAddresses(cexWithoutGtc)).toEqual([]);
+    expect(duplicateAddresses(CEXAddresses)).toEqual([]);
     expect(duplicateAddresses(DEXAddresses)).toEqual([]);
     expect(duplicateAddresses(LendingAddresses)).toEqual([]);
+  });
+
+  it("labels the Nansen-confirmed GTC exchange wallets", () => {
+    const gtc = CEXAddresses[DaoIdEnum.GTC];
+    const byAddress = new Map(
+      Object.entries(gtc).map(([label, address]) => [
+        getAddress(address),
+        label,
+      ]),
+    );
+
+    expect(byAddress.get("0x74be0CF1c9972C00ed4EF290e0E5BCFd18873f13")).toBe(
+      "Bithumb",
+    );
+    expect(byAddress.get("0x14D7Cee42D4643f0C767A1D504d9cA24C890f86c")).toBe(
+      "Upbit",
+    );
+    expect(
+      byAddress.has(getAddress("0x42c7df3f6bfe02eb61c0c2bd2d73c69eec6023cd")),
+    ).toBe(false);
+    expect(
+      byAddress.has(getAddress("0x4da8853217d0d5b59e8fcde36d1bebb0a1932a14")),
+    ).toBe(false);
   });
 
   it("keeps bridges, investors and other DAOs out of the GTC treasury", () => {
