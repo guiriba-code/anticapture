@@ -204,7 +204,7 @@ Source: Nansen profiler labels and premium labels, checked 9 Nov 2026. Etherscan
 - `0x15Da7556D5ED888306839bed06f868AeaeDCb0d7` — unofficial "Revolut" tag only. Funded by `0x9b0c45d46D386ceDd98873168c36efd0Dcba8d46`, which Nansen does call Revolut. Uncertain.
 - `0x00f4a4DF8a2dB5Df0354502803B68365a5c69dDf` — no direct label. Funded by a Nansen "Bithumb: Gas Funder". Uncertain.
 - `0x0529ea5885702715e83923c59746ae8734c553B7` — already labeled Bitpanda. Nansen only has an unofficial Bitpanda tag. Left as it was. Not removed.
-- Coinbase Prime custody, pending a methodology decision (client assets held by Coinbase, not necessarily an exchange hot wallet): `0x4Da8853217d0D5B59e8FCDE36D1BeBB0a1932A14`, `0x00eBF4F968A507a4404e643EeCB35449262861A1`, `0x900a248296691385357551cC7D5FAe9E256dce8E`, `0xceB69F6342eCE283b2F5c9088Ff249B5d0Ae66ea`.
+- Coinbase Prime is excluded from CEX by owner decision (custody service, not trading venue): `0x4Da8853217d0D5B59e8FCDE36D1BeBB0a1932A14`, `0x00eBF4F968A507a4404e643EeCB35449262861A1`, `0x900a248296691385357551cC7D5FAe9E256dce8E`, `0xceB69F6342eCE283b2F5c9088Ff249B5d0Ae66ea`. They are not on any list.
 
 **Re-index.** GTC from token start `12422079` before `CEX_SUPPLY` includes the new balances. New transfers after deploy use the new list immediately; the stored total does not jump until replay.
 
@@ -240,19 +240,19 @@ N7 does not add a shared package. `TreasuryAddresses` now has a test that the AP
 
 These definitions match the code. They are not yet on the public site.
 
-| Metric              | Definition                                                                                                                                                                                   |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Total supply        | `totalSupply()` minus balances of the burn list (`0x0`, `0xdead`, the token contract, and the UNI unclaimed-airdrop address where configured). The contract's raw `totalSupply()` is larger. |
-| Treasury            | Governance-controlled contracts only: timelock, DAO safes, DAO vesting. Not bridges, investors, people or another DAO's timelock.                                                            |
-| Non-circulating     | Third-party vesting and locks that cannot vote or sell now.                                                                                                                                  |
-| Circulating         | Total supply minus treasury minus non-circulating. CEX, DEX and lending are not subtracted.                                                                                                  |
-| CEX / DEX / lending | Sum of `balanceOf` on the lists. GTC additions are Nansen-confirmed exchange wallets only. Coinbase Prime and the uncertain wallets in the N4 section are not included.                      |
-| Delegated           | Sum of delegate voting power. For Nouns and Lil Nouns, after A5 and a replay, this is mints minus burns.                                                                                     |
-| Daily series        | UTC close (`00:00` to `24:00` UTC). The current day is `partial: true`.                                                                                                                      |
-| TORN treasury       | Does not follow raw governor and vault balances. Locks that the indexer cannot attribute stay in the original bucket. Circulating is unchanged. See N19.                                     |
-| Historical coverage | UNI and COMP charts start at the current governor, not at the Alpha governors. See N2.                                                                                                       |
-| `endTimestamp`      | Estimated until the end block is observed. It can be early by about 20–120 minutes. Status `ACTIVE` uses the block.                                                                          |
-| `/token` cache      | Public `max-age=3600`.                                                                                                                                                                       |
+| Metric              | Definition                                                                                                                                                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Total supply        | `totalSupply()` minus balances of the burn list (`0x0`, `0xdead`, the token contract, and the UNI unclaimed-airdrop address where configured). The contract's raw `totalSupply()` is larger.                                  |
+| Treasury            | Governance-controlled contracts only: timelock, DAO safes, DAO vesting. Not bridges, investors, people or another DAO's timelock.                                                                                             |
+| Non-circulating     | Third-party vesting and locks that cannot vote or sell now.                                                                                                                                                                   |
+| Circulating         | Total supply minus treasury minus non-circulating. CEX, DEX and lending are not subtracted.                                                                                                                                   |
+| CEX / DEX / lending | Sum of `balanceOf` on the lists. GTC additions are Nansen-confirmed exchange wallets only. Coinbase Prime is excluded by owner decision (custody, not a trading venue). Uncertain wallets in the N4 section are not included. |
+| Delegated           | Sum of delegate voting power. For Nouns and Lil Nouns, after A5 and a replay, this is mints minus burns.                                                                                                                      |
+| Daily series        | UTC close (`00:00` to `24:00` UTC). The current day is `partial: true`.                                                                                                                                                       |
+| TORN treasury       | Does not follow raw governor and vault balances. Locks that the indexer cannot attribute stay in the original bucket. Circulating is unchanged. See N19.                                                                      |
+| Historical coverage | UNI and COMP charts start at the current governor, not at the Alpha governors. See N2.                                                                                                                                        |
+| `endTimestamp`      | Estimated until the end block is observed. It can be early by about 20–120 minutes. Status `ACTIVE` uses the block.                                                                                                           |
+| `/token` cache      | Public `max-age=3600`.                                                                                                                                                                                                        |
 
 ## Indexer tests
 
