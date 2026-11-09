@@ -98,6 +98,12 @@ describe("address lists", () => {
     );
   });
 
+  it("uses the dead address for Lil Nouns burns", () => {
+    expect(getAddress(BurningAddresses[DaoIdEnum.LIL_NOUNS].Dead)).toBe(
+      getAddress("0x000000000000000000000000000000000000dEaD"),
+    );
+  });
+
   it("uses the timelock returned by the Fluid governor", () => {
     expect(getAddress(TreasuryAddresses[DaoIdEnum.FLUID].InstaTimelock!)).toBe(
       "0x2386DC45AdDed673317eF068992F19421B481F4c",

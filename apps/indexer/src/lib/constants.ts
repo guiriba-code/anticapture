@@ -810,7 +810,7 @@ export const BurningAddresses: Record<
   },
   [DaoIdEnum.LIL_NOUNS]: {
     ZeroAddress: zeroAddress,
-    Dead: "0x0000000000000000000000000000000000000000",
+    Dead: "0x000000000000000000000000000000000000dEaD",
     TokenContract: "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B",
   },
   [DaoIdEnum.SCR]: {
