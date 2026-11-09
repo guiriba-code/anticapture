@@ -37,6 +37,11 @@ export const voteCast = async (
     txHash: Hex;
     votingPower: bigint;
     logIndex: number;
+    weights?: {
+      againstVotes: bigint;
+      forVotes: bigint;
+      abstainVotes: bigint;
+    };
   },
 ) => {
   const {
@@ -48,6 +53,11 @@ export const voteCast = async (
     votingPower,
     reason,
     logIndex,
+    weights = {
+      againstVotes: support === 0 ? votingPower : 0n,
+      forVotes: support === 1 ? votingPower : 0n,
+      abstainVotes: support === 2 ? votingPower : 0n,
+    },
   } = args;
 
   await ensureAccountExists(context, voter);
@@ -83,9 +93,9 @@ export const voteCast = async (
   await context.db
     .update(proposalsOnchain, { id: proposalId })
     .set((current) => ({
-      againstVotes: current.againstVotes + (support === 0 ? votingPower : 0n),
-      forVotes: current.forVotes + (support === 1 ? votingPower : 0n),
-      abstainVotes: current.abstainVotes + (support === 2 ? votingPower : 0n),
+      againstVotes: current.againstVotes + weights.againstVotes,
+      forVotes: current.forVotes + weights.forVotes,
+      abstainVotes: current.abstainVotes + weights.abstainVotes,
     }));
 
   await context.db.insert(feedEvent).values({

@@ -31,7 +31,7 @@ export const GTC: DaoConfiguration = {
     chain: { ...mainnet, icon: MainnetIcon },
     snapshot: "https://snapshot.box/#/s:gitcoindao.eth",
     contracts: {
-      governor: "0x9D4C63565D5618310271bF3F3c01b2954C1D1639",
+      governor: "0xef41CbD211076E8b1901e214Bf751d404cf06638",
       token: "0xDe30da39c46104798bB5aA3fe8B9e0e1F348163F",
       timelock: "0x57a8865cfB1eCEf7253c27da6B4BC3dAEE5Be518",
     },
@@ -196,8 +196,10 @@ export const GTC: DaoConfiguration = {
           GOVERNANCE_IMPLEMENTATION_CONSTANTS[
             GovernanceImplementationEnum.VETO_STRATEGY
           ].description,
-        currentSetting: "The DAO has no Veto Strategy.",
-        impact: "There is no protection mechanism to veto malicious proposals.",
+        currentSetting:
+          "Proposal guardian Safe 0x5743e35477363241300fcedc2f5eb0195f300817 can cancel proposals on Gitcoin Governor Charlie.",
+        impact:
+          "The guardian Safe can cancel a proposal before it is executed. The signer threshold was not re-verified in this change.",
         recommendedSetting:
           RECOMMENDED_SETTINGS[GovernanceImplementationEnum.VETO_STRATEGY],
         nextStep:
@@ -228,7 +230,8 @@ export const GTC: DaoConfiguration = {
           GOVERNANCE_IMPLEMENTATION_CONSTANTS[
             GovernanceImplementationEnum.VOTING_DELAY
           ].description,
-        currentSetting: "The Voting Delay is set to 1 day and 19 hours",
+        currentSetting:
+          "The Voting Delay is 14,400 blocks (2 days at a 12 second block).",
         impact:
           "Given the current Voting Delay, the DAO has sufficient time to coordinate stakeholders and wallets before the snapshot (that counts votes) occurs.",
         recommendedSetting:
@@ -261,7 +264,8 @@ export const GTC: DaoConfiguration = {
           GOVERNANCE_IMPLEMENTATION_CONSTANTS[
             GovernanceImplementationEnum.VOTING_PERIOD
           ].description,
-        currentSetting: "The Voting Period is set to 5 days and 14 hours.",
+        currentSetting:
+          "The Voting Period is 40,320 blocks (5 days and 14 hours). A late quorum extends voting by 7,200 blocks (1 day).",
         impact:
           "The current Voting Period is sufficient for governance participants to cast their votes.",
         recommendedSetting:
