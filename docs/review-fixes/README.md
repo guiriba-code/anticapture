@@ -95,7 +95,9 @@ A4 is a stopped Nouns indexer process. Replaying code will not move a process th
 
 **API status client.** `quorum(proposalId)` (and any later `state(proposalId)` read) uses Governor Charlie when the id is an OpenZeppelin hash (`>= 2^64`) and Bravo otherwise. Bravo and Alpha ids are small integers, so finished Bravo proposals stay on Bravo. The helper is `gitcoinQuorumAddress` in `apps/api/src/clients/gtc/proposal-governor.ts`, wired from `apps/api/src/lib/client.ts` and `apps/api/src/clients/gtc/index.ts`. The API does not call `state()` today; status is derived from indexed votes plus this quorum.
 
-**Test.** Constants and `gitcoin.config.ts` name Charlie and block `25776742`. Fractional decode is in `vote-support.unit.test.ts`.
+**Governance parameters.** `votingDelay`, `votingPeriod` and `proposalThreshold` are read from Charlie, not Bravo. Bravo still returns `votingDelay` of 13,140 blocks; Charlie returns 14,400. `votingPeriod` is 40,320 blocks and `proposalThreshold` is 150,000 GTC. `GET /dao` shows those values, and the inactive-voters summary (and the proposals-activity window, which uses the same two reads) uses the Charlie delay and period. `quorum()` stays per proposal. Timelock delay still reads Bravo, because Charlie and Bravo share timelock `0x57a8865cfB1eCEf7253c27da6B4BC3dAEE5Be518`.
+
+**Test.** Constants and `gitcoin.config.ts` name Charlie and block `25776742`. Fractional decode, including two partial votes from one voter, is in `vote-support.unit.test.ts`. `apps/api/src/clients/gtc/index.unit.test.ts` checks that the three parameter reads hit Charlie (`votingDelay` 14,400) and that a second read uses the cache.
 
 **Risk.** Ponder backfills Charlie from `25776742` on deploy. That is new logs only.
 

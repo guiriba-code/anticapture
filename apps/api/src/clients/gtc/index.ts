@@ -34,6 +34,40 @@ export class GTCClient<
     return "GTC";
   }
 
+  // Current governor parameters. Bravo still answers votingDelay() with 13140
+  // blocks; Charlie is 14400. /dao and the inactive-voters window both use
+  // these reads. quorum() stays per proposal. Timelock delay stays on Bravo:
+  // both governors share that timelock.
+  async getVotingDelay(): Promise<bigint> {
+    return this.readCharlieParameter("votingDelay");
+  }
+
+  async getVotingPeriod(): Promise<bigint> {
+    return this.readCharlieParameter("votingPeriod");
+  }
+
+  async getProposalThreshold(): Promise<bigint> {
+    return this.readCharlieParameter("proposalThreshold");
+  }
+
+  private async readCharlieParameter(
+    functionName: "votingDelay" | "votingPeriod" | "proposalThreshold",
+  ): Promise<bigint> {
+    const cached = this.cache[functionName];
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const value = (await this.readContract({
+      abi: this.abi,
+      address: this.charlieAddress,
+      functionName,
+      args: [],
+    })) as bigint;
+    this.cache[functionName] = value;
+    return value;
+  }
+
   async getQuorum(proposalId: string | null): Promise<bigint> {
     // Same address is used for a future state(proposalId) read. Bravo ids stay
     // on Bravo so finished proposals are not recomputed against Charlie.
