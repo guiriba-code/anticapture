@@ -8,6 +8,7 @@ import {
 import { Address, getAddress, Hex } from "viem";
 
 import { ProposalStatus } from "@/lib/constants";
+import { accumulateCastVote } from "@/lib/vote-support";
 
 import { applyProposalContentUpdate } from "./proposal-content";
 import { ensureAccountExists } from "./shared";
@@ -63,32 +64,64 @@ export const voteCast = async (
 
   await ensureAccountExists(context, voter);
 
-  // Update account power with vote statistics
+  const voterAccountId = getAddress(voter);
+  const existing = await context.db.find(votesOnchain, {
+    voterAccountId,
+    proposalId,
+  });
+  const accumulated = accumulateCastVote(
+    existing
+      ? {
+          votingPower: existing.votingPower,
+          txHash: existing.txHash,
+          logIndex: existing.logIndex,
+        }
+      : null,
+    { votingPower, txHash, logIndex },
+  );
+
+  // The same log during a backfill must not move totals again.
+  if (accumulated.action === "ignore") return;
+
+  const countsAsNewBallot = accumulated.action === "insert";
+
+  // A later partial vote from the same voter adds weight. It is not a new
+  // ballot, so votesCount stays put.
   await context.db
     .insert(accountPower)
     .values({
-      accountId: getAddress(voter),
+      accountId: voterAccountId,
       daoId,
-      votesCount: 1,
+      votesCount: countsAsNewBallot ? 1 : 0,
       lastVoteTimestamp: timestamp,
     })
     .onConflictDoUpdate((current) => ({
-      votesCount: current.votesCount + 1,
+      votesCount: current.votesCount + (countsAsNewBallot ? 1 : 0),
       lastVoteTimestamp: timestamp,
     }));
 
-  // Create vote record
-  await context.db.insert(votesOnchain).values({
-    txHash: txHash,
-    daoId,
-    proposalId,
-    voterAccountId: getAddress(voter),
-    support: support.toString(),
-    votingPower,
-    reason,
-    timestamp,
-    logIndex,
-  });
+  if (accumulated.action === "insert") {
+    await context.db.insert(votesOnchain).values({
+      txHash: txHash,
+      daoId,
+      proposalId,
+      voterAccountId,
+      support: support.toString(),
+      votingPower: accumulated.votingPower,
+      reason,
+      timestamp,
+      logIndex,
+    });
+  } else {
+    await context.db.update(votesOnchain, { voterAccountId, proposalId }).set({
+      txHash,
+      support: support.toString(),
+      votingPower: accumulated.votingPower,
+      reason,
+      timestamp,
+      logIndex,
+    });
+  }
 
   // Update proposal vote totals
   await context.db

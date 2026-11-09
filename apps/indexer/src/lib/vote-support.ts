@@ -65,6 +65,53 @@ export function decodeFractionalVotes(params: Hex | undefined): VoteWeights {
   };
 }
 
+export type StoredVoteKey = {
+  votingPower: bigint;
+  txHash: string;
+  logIndex: number;
+};
+
+/**
+ * A second ballot from the same voter on the same proposal must add weight.
+ * Governor Charlie's fractional mode emits one event per partial vote, and
+ * `votes_onchain` has one row per (voter, proposal). Replaying the same log
+ * is ignored so a reorg backfill cannot double-count.
+ */
+export function accumulateCastVote(
+  existing: StoredVoteKey | null,
+  incoming: { votingPower: bigint; txHash: string; logIndex: number },
+):
+  | { action: "ignore"; votingPower: bigint }
+  | { action: "insert" | "add"; votingPower: bigint } {
+  if (
+    existing &&
+    existing.txHash === incoming.txHash &&
+    existing.logIndex === incoming.logIndex
+  ) {
+    return { action: "ignore", votingPower: existing.votingPower };
+  }
+
+  if (!existing) {
+    return { action: "insert", votingPower: incoming.votingPower };
+  }
+
+  return {
+    action: "add",
+    votingPower: existing.votingPower + incoming.votingPower,
+  };
+}
+
+export function addProposalWeights(
+  current: VoteWeights,
+  weights: VoteWeights,
+): VoteWeights {
+  return {
+    againstVotes: current.againstVotes + weights.againstVotes,
+    forVotes: current.forVotes + weights.forVotes,
+    abstainVotes: current.abstainVotes + weights.abstainVotes,
+  };
+}
+
 function readUint128(bytes: Uint8Array, offset: number): bigint {
   let value = 0n;
   for (let i = 0; i < 16; i++) {

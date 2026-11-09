@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  accumulateCastVote,
+  addProposalWeights,
   alphaSupport,
   bravoSupport,
   decodeFractionalVotes,
@@ -53,6 +55,56 @@ describe("voteWeightByChoice", () => {
     });
   });
 });
+
+describe("accumulateCastVote", () => {
+  it("adds a second partial vote from the same voter without a new ballot count", () => {
+    const firstParams = packed(40n, 60n, 0n);
+    const secondParams = packed(10n, 20n, 20n);
+    const firstWeights = voteWeightByChoice({
+      support: 255,
+      weight: 100n,
+      params: firstParams,
+    });
+    const secondWeights = voteWeightByChoice({
+      support: 255,
+      weight: 50n,
+      params: secondParams,
+    });
+
+    const first = accumulateCastVote(null, {
+      votingPower: 100n,
+      txHash: "0xaaa",
+      logIndex: 1,
+    });
+    expect(first.action).toBe("insert");
+
+    const second = accumulateCastVote(
+      { votingPower: first.votingPower, txHash: "0xaaa", logIndex: 1 },
+      { votingPower: 50n, txHash: "0xbbb", logIndex: 2 },
+    );
+    expect(second).toEqual({ action: "add", votingPower: 150n });
+
+    const replay = accumulateCastVote(
+      { votingPower: second.votingPower, txHash: "0xbbb", logIndex: 2 },
+      { votingPower: 50n, txHash: "0xbbb", logIndex: 2 },
+    );
+    expect(replay.action).toBe("ignore");
+
+    const proposal = addProposalWeights(
+      { againstVotes: 0n, forVotes: 0n, abstainVotes: 0n },
+      firstWeights,
+    );
+    expect(addProposalWeights(proposal, secondWeights)).toEqual({
+      againstVotes: 50n,
+      forVotes: 80n,
+      abstainVotes: 20n,
+    });
+  });
+});
+
+function packed(against: bigint, forVotes: bigint, abstain: bigint) {
+  return `0x${uint128(against)}${uint128(forVotes)}${uint128(abstain)}` as const;
+}
 
 function uint128(value: bigint): string {
   return value.toString(16).padStart(32, "0");
