@@ -7,6 +7,7 @@ import {
 } from "@/eventHandlers";
 import { DaoIdEnum } from "@/lib/enums";
 import { ProposalStatus } from "@/lib/constants";
+import { bravoSupport } from "@/lib/vote-support";
 
 export function GovernorIndexer(blockTime: number) {
   const daoId = DaoIdEnum.GTC;
@@ -16,7 +17,7 @@ export function GovernorIndexer(blockTime: number) {
       proposalId: event.args.proposalId.toString(),
       voter: event.args.voter,
       reason: event.args.reason,
-      support: event.args.support ? 1 : 0,
+      support: bravoSupport(event.args.support),
       timestamp: event.block.timestamp,
       txHash: event.transaction.hash,
       votingPower: event.args.weight,
