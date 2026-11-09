@@ -28,10 +28,20 @@ const createRow = (overrides: {
   date: bigint;
   high: bigint;
   volume: bigint;
+  close?: bigint;
 }): MetricRow => ({
   date: overrides.date,
   high: overrides.high,
+  close: overrides.close ?? overrides.high,
   volume: overrides.volume,
+});
+
+const point = (date: number, level: string, volume: string) => ({
+  date: date.toString(),
+  high: level,
+  close: level,
+  volume,
+  partial: false,
 });
 
 const ONE_DAY = 86400;
@@ -68,7 +78,7 @@ describe("TokenMetricsService", () => {
       });
 
       expect(result).toEqual({
-        items: [{ date: DAY1.toString(), high: "1000", volume: "100" }],
+        items: [point(DAY1, "1000", "100")],
         hasNextPage: false,
         hasPreviousPage: false,
         startDate: DAY1.toString(),
@@ -99,14 +109,10 @@ describe("TokenMetricsService", () => {
 
       expect(result).toEqual({
         items: [
-          { date: DAY1.toString(), high: "500", volume: "0" },
-          { date: (DAY1 + ONE_DAY).toString(), high: "500", volume: "0" },
-          {
-            date: (DAY1 + 2 * ONE_DAY).toString(),
-            high: "500",
-            volume: "0",
-          },
-          { date: day4.toString(), high: "800", volume: "80" },
+          point(DAY1, "500", "0"),
+          point(DAY1 + ONE_DAY, "500", "0"),
+          point(DAY1 + 2 * ONE_DAY, "500", "0"),
+          point(day4, "800", "80"),
         ],
         hasNextPage: false,
         hasPreviousPage: false,
@@ -153,23 +159,11 @@ describe("TokenMetricsService", () => {
 
       expect(result).toEqual({
         items: [
-          { date: DAY1.toString(), high: "0", volume: "0" },
-          { date: (DAY1 + ONE_DAY).toString(), high: "100", volume: "0" },
-          {
-            date: (DAY1 + 2 * ONE_DAY).toString(),
-            high: "200",
-            volume: "0",
-          },
-          {
-            date: (DAY1 + 3 * ONE_DAY).toString(),
-            high: "300",
-            volume: "0",
-          },
-          {
-            date: (DAY1 + 4 * ONE_DAY).toString(),
-            high: "400",
-            volume: "0",
-          },
+          point(DAY1, "0", "0"),
+          point(DAY1 + ONE_DAY, "100", "0"),
+          point(DAY1 + 2 * ONE_DAY, "200", "0"),
+          point(DAY1 + 3 * ONE_DAY, "300", "0"),
+          point(DAY1 + 4 * ONE_DAY, "400", "0"),
         ],
         hasNextPage: true,
         hasPreviousPage: false,
@@ -195,15 +189,50 @@ describe("TokenMetricsService", () => {
       });
 
       expect(result).toEqual({
-        items: [
-          { date: day2.toString(), high: "200", volume: "20" },
-          { date: DAY1.toString(), high: "100", volume: "10" },
-        ],
+        items: [point(day2, "200", "20"), point(DAY1, "100", "10")],
         hasNextPage: false,
         hasPreviousPage: false,
         startDate: day2.toString(),
         endDate: DAY1.toString(),
       });
+    });
+
+    it("forward-fills the close when the intraday high is higher", async () => {
+      const day2 = DAY1 + ONE_DAY;
+      const repo = createStubRepo([
+        createRow({
+          date: BigInt(DAY1),
+          high: 41_534_595n,
+          close: 30_339_646n,
+          volume: 11_000_000n,
+        }),
+      ]);
+      const service = new TokenMetricsService(repo);
+
+      const result = await service.getMetricsForType({
+        metricType: MetricTypesEnum.CEX_SUPPLY,
+        startDate: DAY1,
+        endDate: day2,
+        orderDirection: "asc",
+        limit: 365,
+      });
+
+      expect(result.items).toEqual([
+        {
+          date: DAY1.toString(),
+          high: "41534595",
+          close: "30339646",
+          volume: "11000000",
+          partial: false,
+        },
+        {
+          date: day2.toString(),
+          high: "30339646",
+          close: "30339646",
+          volume: "0",
+          partial: false,
+        },
+      ]);
     });
 
     it("should handle error fetching initial value gracefully", async () => {
@@ -224,7 +253,7 @@ describe("TokenMetricsService", () => {
       });
 
       expect(result).toEqual({
-        items: [{ date: DAY1.toString(), high: "1000", volume: "100" }],
+        items: [point(DAY1, "1000", "100")],
         hasNextPage: false,
         hasPreviousPage: false,
         startDate: DAY1.toString(),

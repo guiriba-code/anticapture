@@ -6,6 +6,7 @@ import type {
   TokenMetricItem,
   MultilineChartDataSetPoint,
 } from "@/shared/dao-config/types";
+import { tokenMetricLevel } from "@/shared/utils/token-metric-level";
 
 export function normalizeDataset(
   tokenPrices: TokenHistoricalPriceItem[],
@@ -25,7 +26,9 @@ export function normalizeDataset(
   const multipliersByTs = multiplier.reduce(
     (acc, item) => ({
       ...acc,
-      [Number(item.date)]: Number(formatUnits(BigInt(item.high), decimals)),
+      [Number(item.date)]: Number(
+        formatUnits(BigInt(tokenMetricLevel(item)), decimals),
+      ),
     }),
     {} as Record<number, number>,
   );

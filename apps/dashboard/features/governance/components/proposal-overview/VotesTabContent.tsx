@@ -21,6 +21,7 @@ import { PillTab } from "@/shared/components/design-system/tabs/pill-tab/PillTab
 import daoConfig from "@/shared/dao-config";
 import type { DaoIdEnum } from "@/shared/types/daos";
 import { formatNumberUserReadable } from "@/shared/utils/formatNumberUserReadable";
+import { tokenMetricLevel } from "@/shared/utils/token-metric-level";
 
 type VoteTabId = "voted" | "didntVote";
 
@@ -91,7 +92,10 @@ export const VotesTabContent = ({
     BigInt(proposal.againstVotes) +
     BigInt(proposal.abstainVotes);
 
-  const historicalDelegatedSupply = delegatedSupplyData?.items?.[0]?.high;
+  const latestSupply = delegatedSupplyData?.items?.[0];
+  const historicalDelegatedSupply = latestSupply
+    ? tokenMetricLevel(latestSupply)
+    : undefined;
 
   const delegatedSupplyBigInt = historicalDelegatedSupply
     ? BigInt(historicalDelegatedSupply)

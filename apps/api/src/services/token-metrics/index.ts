@@ -26,6 +26,7 @@ import { MetricTypesEnum } from "@/lib/constants";
 import {
   normalizeMapTimestamps,
   getEffectiveStartDate,
+  truncateTimestampToMidnight,
 } from "@/lib/date-helpers";
 import { applyCursorPagination } from "@/lib/query-helpers";
 import { forwardFill, generateOrderedTimeline } from "@/lib/time-series";
@@ -35,6 +36,7 @@ import { TokenMetricItem } from "@/mappers/token-metrics";
 interface DaoMetricsRow {
   date: bigint;
   high: bigint;
+  close: bigint;
   volume: bigint;
 }
 
@@ -54,12 +56,8 @@ export interface ITokenMetricsRepository {
 
 interface MetricData {
   high: bigint;
+  close: bigint;
   volume: bigint;
-  low?: bigint;
-  open?: bigint;
-  close?: bigint;
-  average?: bigint;
-  count?: number;
 }
 
 export class TokenMetricsService {
@@ -116,6 +114,7 @@ export class TokenMetricsService {
       const date = Number(row.date);
       dateMap.set(date, {
         high: row.high,
+        close: row.close,
         volume: row.volume,
       });
     });
@@ -182,6 +181,7 @@ export class TokenMetricsService {
       if (row) {
         return {
           high: row.high,
+          close: row.close,
           volume: row.volume,
         };
       }
@@ -202,32 +202,41 @@ export class TokenMetricsService {
     initialValue?: MetricData,
   ): TokenMetricItem[] {
     // Convert dateMap to Maps for forward-fill
+    const closeMap = new Map<number, bigint>();
     const highMap = new Map<number, bigint>();
     const volumeMap = new Map<number, bigint>();
 
     for (const [date, data] of dateMap) {
+      closeMap.set(date, data.close);
       highMap.set(date, data.high);
       volumeMap.set(date, data.volume);
     }
 
-    // Normalize timestamps to midnight UTC before forward-fill
+    // Normalize timestamps to midnight UTC before forward-fill.
+    // The carried level is the close. Repeating the high keeps a sell-off
+    // invisible until the next day that happens to set a new high.
+    const normalizedCloseMap = normalizeMapTimestamps(closeMap);
     const normalizedHighMap = normalizeMapTimestamps(highMap);
     const normalizedVolumeMap = normalizeMapTimestamps(volumeMap);
 
-    // Apply forward-fill
-    const filledHigh = forwardFill(
+    const filledClose = forwardFill(
       timeline,
-      normalizedHighMap,
-      initialValue?.high,
+      normalizedCloseMap,
+      initialValue?.close,
     );
+    const today = truncateTimestampToMidnight(Math.floor(Date.now() / 1000));
 
-    // Build result array
     return timeline
-      .filter((date) => filledHigh.has(date)) // Only include dates with data
-      .map((date) => ({
-        date: date.toString(),
-        high: (filledHigh.get(date) ?? 0n).toString(),
-        volume: (normalizedVolumeMap.get(date) ?? 0n).toString(),
-      }));
+      .filter((date) => filledClose.has(date))
+      .map((date) => {
+        const close = filledClose.get(date) ?? 0n;
+        return {
+          date: date.toString(),
+          high: (normalizedHighMap.get(date) ?? close).toString(),
+          close: close.toString(),
+          volume: (normalizedVolumeMap.get(date) ?? 0n).toString(),
+          partial: date >= today,
+        };
+      });
   }
 }

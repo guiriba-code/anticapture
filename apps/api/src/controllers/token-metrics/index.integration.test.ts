@@ -103,7 +103,9 @@ describe("TokenMetrics Controller", () => {
           {
             date: "1699920000",
             high: "1000000000000000000",
+            close: "0",
             volume: "500000000000000000",
+            partial: false,
           },
         ],
         pageInfo: {
