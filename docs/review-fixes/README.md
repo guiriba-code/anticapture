@@ -123,7 +123,7 @@ A4 is a stopped Nouns indexer process. Replaying code will not move a process th
 
 **Test.** A day with high 41,534,595 and close 30,339,646 is followed by a gap day at 30,339,646, not the high.
 
-**Risk.** None for storage. Clients that plotted `high` and want the peak must read `high` on event days only. The chart level is `close`. Regenerate `@anticapture/client` when Gateful is up so the new fields are typed. The dashboard helper already reads `close` when the JSON has it.
+**Risk.** None for storage. This changes the gateway contract: `close` and `partial` are new fields, and `high` on a gap day is the carried close rather than the previous peak. `@anticapture/gateful` has a changeset for that. Clients that plotted `high` and want the peak must read `high` on event days only. The chart level is `close`. Regenerate `@anticapture/client` from the updated Gateful spec. The dashboard helper reads `close` when the JSON has it.
 
 ## A7 — duplicate labels
 
