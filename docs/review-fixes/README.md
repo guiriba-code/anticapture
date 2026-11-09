@@ -206,6 +206,14 @@ Source: Nansen profiler labels and premium labels, checked 9 Nov 2026. Etherscan
 - `0x0529ea5885702715e83923c59746ae8734c553B7` — already labeled Bitpanda. Nansen only has an unofficial Bitpanda tag. Left as it was. Not removed.
 - Coinbase Prime is excluded from CEX by owner decision (custody service, not trading venue): `0x4Da8853217d0D5B59e8FCDE36D1BeBB0a1932A14`, `0x00eBF4F968A507a4404e643EeCB35449262861A1`, `0x900a248296691385357551cC7D5FAe9E256dce8E`, `0xceB69F6342eCE283b2F5c9088Ff249B5d0Ae66ea`. They are not on any list.
 
+**Identified by Nansen, not added in this PR** (about 725k GTC together). Do not add them unless asked.
+
+- Revolut `0x9b0c45d46D386cEdD98873168C36efd0DcBa8d46`
+- Korbit `0xf0bc8FdDB1F358cEf470D63F96aE65B1D7914953`
+- Kraken `0xcC282E2004428939ee5149A9e7872F0B4d5d5ec7`
+- Crypto.com `0x5b71D5FD6bb118665582dd87922bF3B9De6c75F9`
+- Bitpanda `0x74dEc05E5b894b0EfEc69Cdf6316971802A2F9a1`
+
 **Re-index.** GTC from token start `12422079` before `CEX_SUPPLY` includes the new balances. New transfers after deploy use the new list immediately; the stored total does not jump until replay.
 
 ## N5, N6, N7
