@@ -5,6 +5,7 @@ import { DAOClient } from "@/clients";
 import { GovernorBase } from "../governor.base";
 
 import { GovernorAbi } from "./abi/governor";
+import { gitcoinQuorumAddress } from "./proposal-governor";
 
 export class GTCClient<
   TTransport extends Transport = Transport,
@@ -16,10 +17,16 @@ export class GTCClient<
 {
   protected abi: typeof GovernorAbi;
   protected address: Address;
+  private readonly charlieAddress: Address;
 
-  constructor(client: Client<TTransport, TChain, TAccount>, address: Address) {
+  constructor(
+    client: Client<TTransport, TChain, TAccount>,
+    address: Address,
+    charlieAddress: Address,
+  ) {
     super(client);
     this.address = address;
+    this.charlieAddress = charlieAddress;
     this.abi = GovernorAbi;
   }
 
@@ -27,17 +34,25 @@ export class GTCClient<
     return "GTC";
   }
 
-  async getQuorum(): Promise<bigint> {
+  async getQuorum(proposalId: string | null): Promise<bigint> {
+    // Same address is used for a future state(proposalId) read. Bravo ids stay
+    // on Bravo so finished proposals are not recomputed against Charlie.
+    const governor = gitcoinQuorumAddress(
+      proposalId,
+      this.address,
+      this.charlieAddress,
+    );
+
     return this.getCachedQuorum(async () => {
       const blockNumber = await this.getBlockNumber();
       const targetBlock = blockNumber - 10n;
       return this.readContract({
         abi: this.abi,
-        address: this.address,
+        address: governor,
         functionName: "quorum",
         args: [targetBlock < 0n ? 0n : targetBlock],
       });
-    });
+    }, `quorum:${governor}`);
   }
 
   protected async fetchTimelockDelay(): Promise<bigint> {
