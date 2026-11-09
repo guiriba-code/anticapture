@@ -9,6 +9,7 @@ import { Address, getAddress, Hex } from "viem";
 
 import { ProposalStatus } from "@/lib/constants";
 
+import { applyProposalContentUpdate } from "./proposal-content";
 import { ensureAccountExists } from "./shared";
 
 /**
@@ -248,6 +249,42 @@ export const proposalCreated = async (
  * - `proposalsOnchain`: Sets queuedTimestamp and queuedTxHash when status is QUEUED
  * - `proposalsOnchain`: Sets executedTimestamp and executedTxHash when status is EXECUTED
  */
+export const updateProposalContent = async (
+  context: Context,
+  proposalId: string,
+  patch: {
+    description?: string;
+    targets?: readonly Address[];
+    values?: readonly bigint[];
+    signatures?: readonly string[];
+    calldatas?: readonly Hex[];
+  },
+) => {
+  await context.db
+    .update(proposalsOnchain, { id: proposalId })
+    .set((current) => {
+      const next = applyProposalContentUpdate(
+        {
+          title: current.title,
+          description: current.description,
+          targets: current.targets,
+          values: current.values,
+          signatures: current.signatures,
+          calldatas: current.calldatas,
+        },
+        patch,
+      );
+      return {
+        title: next.title,
+        description: next.description,
+        targets: next.targets.map((target) => getAddress(target as Address)),
+        values: next.values,
+        signatures: next.signatures,
+        calldatas: next.calldatas,
+      };
+    });
+};
+
 export const updateProposalStatus = async (
   context: Context,
   proposalId: string,
