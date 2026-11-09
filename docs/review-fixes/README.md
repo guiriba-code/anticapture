@@ -2,6 +2,8 @@
 
 Fixes for the read-only review of `dev` at `89929c879` (9 Nov 2026). Each code change is one commit. Re-index notes are decisions for the upstream team: this branch does not replay chain data or ship a migration.
 
+The note written for the team, with priorities, how to reproduce the findings, and open questions, is [DEV_HANDOFF.md](./DEV_HANDOFF.md).
+
 ## Status
 
 | ID  | Title                                                               | Severity    | Status                                           | Commit                            | Files                                                                                                                         | Test                                                                          |
