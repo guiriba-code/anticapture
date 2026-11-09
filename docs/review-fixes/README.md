@@ -264,4 +264,13 @@ These definitions match the code. They are not yet on the public site.
 
 ## Indexer tests
 
-`apps/indexer` had no test script. It now runs Vitest (`pnpm --filter @anticapture/indexer test`) on `src/**/*.unit.test.ts`. The runner was added in the A1 commit. Ponder handlers are not booted; tests cover the pure decisions and the ABI.
+`apps/indexer` had no test script. It now runs Vitest (`pnpm --filter @anticapture/indexer test`) on `src/**/*.unit.test.ts`. The runner was added in the A1 commit. Tests cover helpers, ABIs and config text. They do not boot Ponder or run handlers end to end.
+
+## What changes on deploy before any replay
+
+- Nouns and Lil Nouns proposal status (N13): the 16 Nouns and 12 Lil Nouns proposals that were `SUCCEEDED` because abstain counted toward quorum are recalculated on the next request. Nouns 269 becomes `NO_QUORUM`.
+- `/health` freshness (A9): quiet DAOs are not degraded after five minutes. A sync cursor older than 600 seconds, or a day without indexed activity when that cursor cannot be read, is still degraded.
+- Daily charts (A6) use the UTC close. Gap days repeat that close. The current UTC day is `partial: true`.
+- `GET /lil_nouns/token` returns 200 with price `0` and `degraded: true` while `token_price` is empty. After the auction backfill, a sale older than 7 days is still returned and marked `degraded: true`.
+
+The GTC governor ABI change (Alpha `VoteCast` plus Charlie) can make Ponder re-process GTC logs at deploy. Schedule that. It is not a silent no-op.
